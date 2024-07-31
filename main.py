@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import threading
 import time
+import pytz
 import os
 from datetime import datetime, timedelta
 
@@ -21,7 +22,8 @@ class GetApiWeatherLink:
         # dt_now_formated = datetime.strptime("2024-07-30 15:15:17","%Y-%m-%d %H:%M:%S").strftime(FORMAT_DATE_TIME)
 
         # date time now
-        dt_now_formated = datetime.now().strftime(FORMAT_DATE_TIME)
+        tz = pytz.timezone('Asia/Bangkok')
+        dt_now_formated = datetime.now(tz).strftime(FORMAT_DATE_TIME)
 
         dt_now = datetime.strptime(dt_now_formated, FORMAT_DATE_TIME)
         diff_mod_5_min = dt_now.minute % 5
