@@ -12,8 +12,9 @@ from datetime import datetime, timedelta
 load_dotenv()
 
 LOG_FILE_PATH = "./logs"
-logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR)
 FORMAT_DATE_TIME = "%Y-%m-%d %H:%M"
+
+logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR)
 
 
 class GetApiWeatherLink:
