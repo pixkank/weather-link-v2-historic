@@ -14,7 +14,7 @@ load_dotenv()
 LOG_FILE_PATH = "./logs"
 FORMAT_DATE_TIME = "%Y-%m-%d %H:%M"
 
-logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR)
+logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class GetApiWeatherLink:
@@ -218,7 +218,10 @@ class GetApiWeatherLink:
 
 if __name__ == "__main__":
     app = GetApiWeatherLink()
-    app.begin()
-    # Keep the main thread alive
-    while True:
-        time.sleep(1)
+    try:
+        app.begin()
+        # Keep the main thread alive
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logging.error('KeyboardInterrupt')
