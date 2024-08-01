@@ -19,35 +19,25 @@ logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR)
 
 class GetApiWeatherLink:
     def get_now_dt(self):
-        # custom dt for test
-        # dt_now_formated = datetime.strptime("2024-07-30 15:15:17","%Y-%m-%d %H:%M:%S").strftime(FORMAT_DATE_TIME)
-
-        # date time now
         tz = pytz.timezone('Asia/Bangkok')
         dt_now_formated = datetime.now(tz).strftime(FORMAT_DATE_TIME)
-
         dt_now = datetime.strptime(dt_now_formated, FORMAT_DATE_TIME)
         diff_mod_5_min = dt_now.minute % 5
         if diff_mod_5_min == 0:
             diff_mod_5_min = 5
-        # If Time Zone UTC 7 -> UTC 0 : add hours = 7
         dt = dt_now - timedelta(minutes=diff_mod_5_min)
-        print(f'run program at: {dt_now.strftime(
-            FORMAT_DATE_TIME)} || run time at: {dt.strftime(FORMAT_DATE_TIME)}')
         return dt
 
     def convert_datetime_to_ts(self, dt):
         return int(datetime.timestamp(dt))
 
     def get_start_end_timestamp(self, dt):
-        start_timestamp = self.convert_datetime_to_ts(
-            dt - timedelta(minutes=5))
+        start_timestamp = self.convert_datetime_to_ts(dt - timedelta(minutes=5))
         end_timestamp = self.convert_datetime_to_ts(dt)
         return start_timestamp, end_timestamp
 
     def get_weather_api_data(self, start_timestamp, end_timestamp):
-        url = f"https://api.weatherlink.com/v2/historic/{os.getenv('station-id')}?api-key={os.getenv(
-            'api-key')}&start-timestamp={start_timestamp}&end-timestamp={end_timestamp}"
+        url = f"https://api.weatherlink.com/v2/historic/{os.getenv('station-id')}?api-key={os.getenv('api-key')}&start-timestamp={start_timestamp}&end-timestamp={end_timestamp}"
         payload = {}
         headers = {"X-Api-Secret": os.getenv('x-api-secret')}
         response = requests.request("GET", url, headers=headers, data=payload)
@@ -56,11 +46,8 @@ class GetApiWeatherLink:
     def get_weather_data(self, start_timestamp, end_timestamp):
         data_list = {}
         tranformed_data_list = {}
-
-        weather_data = self.get_weather_api_data(
-            start_timestamp, end_timestamp)
+        weather_data = self.get_weather_api_data(start_timestamp, end_timestamp)
         df = pd.DataFrame(weather_data["sensors"], columns=["data"])
-
         for data in df["data"]:
             if len(data) > 0:
                 if data[0].get("temp_last") is not None:
@@ -70,24 +57,19 @@ class GetApiWeatherLink:
                 if data[0].get("wind_speed_avg") is not None:
                     data_list["wind_speed_avg"] = data[0].get("wind_speed_avg")
                 if data[0].get("wind_dir_of_prevail") is not None:
-                    data_list["wind_dir_of_prevail"] = data[0].get(
-                        "wind_dir_of_prevail")
+                    data_list["wind_dir_of_prevail"] = data[0].get("wind_dir_of_prevail")
                 if data[0].get("heat_index_hi") is not None:
                     data_list["heat_index_hi"] = data[0].get("heat_index_hi")
                 if data[0].get("rainfall_mm") is not None:
                     data_list["rainfall_mm"] = data[0].get("rainfall_mm")
                 if data[0].get("rain_rate_hi_mm") is not None:
-                    data_list["rain_rate_hi_mm"] = data[0].get(
-                        "rain_rate_hi_mm")
+                    data_list["rain_rate_hi_mm"] = data[0].get("rain_rate_hi_mm")
                 if data[0].get("bar_sea_level") is not None:
                     data_list["bar_sea_level"] = data[0].get("bar_sea_level")
-
         if len(data_list) > 0:
             tranformed_data_list = self.tranform_data_list(data_list)
-            # dt = datetime.fromtimestamp(end_timestamp) + timedelta(hours=7)
             dt = datetime.fromtimestamp(end_timestamp)
             tranformed_data_list["dt"] = dt.strftime(FORMAT_DATE_TIME)
-
         return tranformed_data_list
 
     def convert_temp_f_to_c(self, temp):
@@ -139,33 +121,32 @@ class GetApiWeatherLink:
     def tranform_data_list(self, data_list):
         value_list = {}
         if len(data_list) > 0:
-            temperature_last = self.convert_temp_f_to_c(
-                data_list.get("temp_last"))
+            temperature_last = self.convert_temp_f_to_c(data_list.get("temp_last"))
             value_list["temperature_last"] = np.round(temperature_last, 2)
-
             humidity = data_list.get("hum_last")
             value_list["humidity"] = humidity
-
             ws = self.convert_ws_mph_to_ms(data_list.get("wind_speed_avg"))
             value_list["wind_speed"] = np.round(ws, 2)
-
             wd = self.convert_wd_to_text(data_list.get("wind_dir_of_prevail"))
             value_list["wind_direction"] = wd
-
-            heat_index_hi = self.convert_temp_f_to_c(
-                data_list.get("heat_index_hi"))
+            heat_index_hi = self.convert_temp_f_to_c(data_list.get("heat_index_hi"))
             value_list["heat_index_hi"] = np.round(heat_index_hi, 2)
-
             rain = data_list.get("rainfall_mm")
             value_list["rain"] = rain
-
             rain_rate = data_list.get("rain_rate_hi_mm")
             value_list["rain_rate"] = rain_rate
-
             pressure = self.convert_inHg_to_hPa(data_list.get("bar_sea_level"))
             value_list["pressure"] = np.round(pressure, 2)
-
         return value_list
+
+    def post_data(self,data_list):
+        # some post to database or api
+        with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
+            fdata_log.write(str(data_list) + "\n")
+    
+    def no_data(self,end_timestamp):
+        with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
+            fnodata_log.write(datetime.fromtimestamp(end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
 
     def get_data(self):
         try:
@@ -173,18 +154,11 @@ class GetApiWeatherLink:
             start_timestamp, end_timestamp = self.get_start_end_timestamp(dt)
             data_list = self.get_weather_data(start_timestamp, end_timestamp)
             if len(data_list) > 0:
-                # wait post api
-                with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
-                    fdata_log.write(str(data_list) + "\n")
-                    print(data_list)
+                self.post_data(data_list)
             else:
-                with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
-                    fnodata_log.write(datetime.fromtimestamp(
-                        end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
-                    print("No data")
+                self.no_data(end_timestamp)
             with open(f"{LOG_FILE_PATH}/program_run_log.txt", "a") as fprogram_run_log:
-                fprogram_run_log.write(datetime.fromtimestamp(
-                    end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
+                fprogram_run_log.write(datetime.fromtimestamp(end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
                 fprogram_run_log.close()
             self.check_lost_data()
         except Exception as e:
@@ -198,17 +172,11 @@ class GetApiWeatherLink:
                 for line in lines:
                     if line.strip():
                         nodata_datetime = line.strip()
-                        # datetime string to datetime object
-                        dt = datetime.strptime(
-                            nodata_datetime, FORMAT_DATE_TIME)
-                        start_timestamp, end_timestamp = self.get_start_end_timestamp(
-                            dt)
-                        data_list = self.get_weather_data(
-                            start_timestamp, end_timestamp)
+                        dt = datetime.strptime(nodata_datetime, FORMAT_DATE_TIME)
+                        start_timestamp, end_timestamp = self.get_start_end_timestamp(dt)
+                        data_list = self.get_weather_data(start_timestamp, end_timestamp)
                         if len(data_list) > 0:
-                            # wait post api
-                            with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as data_f:
-                                data_f.write(str(data_list) + "\n")
+                            self.post_data(data_list)
                         else:
                             f.write(line)
                     else:
@@ -231,21 +199,12 @@ class GetApiWeatherLink:
                     diff = last_dt - old_dt
                     count = int((diff.seconds / 60) / 5)
                     for i in range(count):
-                        # datetime string to datetime object
-                        start_timestamp, end_timestamp = self.get_start_end_timestamp(
-                            last_dt)
-                        data_list = self.get_weather_data(
-                            start_timestamp, end_timestamp)
+                        start_timestamp, end_timestamp = self.get_start_end_timestamp(last_dt)
+                        data_list = self.get_weather_data(start_timestamp, end_timestamp)
                         if len(data_list) > 0:
-                            # wait post api
-                            with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
-                                fdata_log.write(str(data_list) + "\n")
-                                print(data_list)
+                            self.post_data(data_list)
                         else:
-                            with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
-                                fnodata_log.write(datetime.fromtimestamp(
-                                    end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
-                                print("No data")
+                            self.no_data(end_timestamp)
                         last_dt = last_dt - timedelta(minutes=5)
 
     def begin(self):
