@@ -168,24 +168,27 @@ class GetApiWeatherLink:
         return value_list
 
     def get_data(self):
-        dt = self.get_now_dt()
-        start_timestamp, end_timestamp = self.get_start_end_timestamp(dt)
-        data_list = self.get_weather_data(start_timestamp, end_timestamp)
-        if len(data_list) > 0:
-            # wait post api
-            with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
-                fdata_log.write(str(data_list) + "\n")
-                print(data_list)
-        else:
-            with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
-                fnodata_log.write(datetime.fromtimestamp(
+        try:
+            dt = self.get_now_dt()
+            start_timestamp, end_timestamp = self.get_start_end_timestamp(dt)
+            data_list = self.get_weather_data(start_timestamp, end_timestamp)
+            if len(data_list) > 0:
+                # wait post api
+                with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
+                    fdata_log.write(str(data_list) + "\n")
+                    print(data_list)
+            else:
+                with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
+                    fnodata_log.write(datetime.fromtimestamp(
+                        end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
+                    print("No data")
+            with open(f"{LOG_FILE_PATH}/program_run_log.txt", "a") as fprogram_run_log:
+                fprogram_run_log.write(datetime.fromtimestamp(
                     end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
-                print("No data")
-        with open(f"{LOG_FILE_PATH}/program_run_log.txt", "a") as fprogram_run_log:
-            fprogram_run_log.write(datetime.fromtimestamp(
-                end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
-            fprogram_run_log.close()
-        self.check_lost_data()
+                fprogram_run_log.close()
+            self.check_lost_data()
+        except Exception as e:
+            logging.error(e)
 
     def check_no_data(self):
         if os.path.exists(f"{LOG_FILE_PATH}/nodata_log.txt"):
@@ -247,13 +250,10 @@ class GetApiWeatherLink:
 
     def begin(self):
         while True:
-            try:
-                thread1 = threading.Thread(target=self.get_data)
-                thread2 = threading.Thread(target=self.check_no_data)
-                thread1.start()
-                thread2.start()
-            except Exception as e:
-                logging.error(e)
+            thread1 = threading.Thread(target=self.get_data)
+            thread2 = threading.Thread(target=self.check_no_data)
+            thread1.start()
+            thread2.start()
             time.sleep(300)
 
 
