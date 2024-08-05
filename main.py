@@ -36,9 +36,9 @@ class GetApiWeatherLink:
         return start_timestamp, end_timestamp
 
     def get_weather_api_data(self, start_timestamp, end_timestamp):
-        url = f"https://api.weatherlink.com/v2/historic/{os.getenv('station-id')}?api-key={os.getenv('api-key')}&start-timestamp={start_timestamp}&end-timestamp={end_timestamp}"
+        url = f"https://api.weatherlink.com/v2/historic/{os.getenv('STATION_ID')}?api-key={os.getenv('API_KEY')}&start-timestamp={start_timestamp}&end-timestamp={end_timestamp}"
         payload = {}
-        headers = {"X-Api-Secret": os.getenv('x-api-secret')}
+        headers = {"X-Api-Secret": os.getenv('X_API_SECRET')}
         response = requests.request("GET", url, headers=headers, data=payload)
         return response.json()
 
