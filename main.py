@@ -11,18 +11,16 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE_PATH = f"{ROOT_DIR}/logs"
-FORMAT_DATE_TIME = "%Y-%m-%d %H:%M"
-
-logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
 class GetApiWeatherLink:
+    def __init__(self):
+        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        self.LOG_FILE_PATH = f"{ROOT_DIR}/logs"
+        self.FORMAT_DATE_TIME = "%Y-%m-%d %H:%M"
+        logging.basicConfig(filename=f'{self.LOG_FILE_PATH}/error.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
     def get_now_dt(self):
         tz = pytz.timezone('Asia/Bangkok')
-        dt_now_formated = datetime.now(tz).strftime(FORMAT_DATE_TIME)
-        dt_now = datetime.strptime(dt_now_formated, FORMAT_DATE_TIME)
+        dt_now_formated = datetime.now(tz).strftime(self.FORMAT_DATE_TIME)
+        dt_now = datetime.strptime(dt_now_formated, self.FORMAT_DATE_TIME)
         diff_mod_5_min = dt_now.minute % 5
         if diff_mod_5_min == 0:
             diff_mod_5_min = 5
@@ -70,7 +68,7 @@ class GetApiWeatherLink:
         if len(data_list) > 0:
             tranformed_data_list = self.tranform_data_list(data_list)
             dt = datetime.fromtimestamp(end_timestamp)
-            tranformed_data_list["dt"] = dt.strftime(FORMAT_DATE_TIME)
+            tranformed_data_list["dt"] = dt.strftime(self.FORMAT_DATE_TIME)
         return tranformed_data_list
 
     def convert_temp_f_to_c(self, temp):
@@ -142,12 +140,12 @@ class GetApiWeatherLink:
 
     def post_data(self,data_list):
         # some post to database or api
-        with open(f"{LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
+        with open(f"{self.LOG_FILE_PATH}/data_log.txt", "a") as fdata_log:
             fdata_log.write(str(data_list) + "\n")
     
     def no_data(self,end_timestamp):
-        with open(f"{LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
-            fnodata_log.write(datetime.fromtimestamp(end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
+        with open(f"{self.LOG_FILE_PATH}/nodata_log.txt", "a") as fnodata_log:
+            fnodata_log.write(datetime.fromtimestamp(end_timestamp).strftime(self.FORMAT_DATE_TIME) + "\n")
 
     def get_data(self):
         try:
@@ -158,22 +156,22 @@ class GetApiWeatherLink:
                 self.post_data(data_list)
             else:
                 self.no_data(end_timestamp)
-            with open(f"{LOG_FILE_PATH}/program_run_log.txt", "a") as fprogram_run_log:
-                fprogram_run_log.write(datetime.fromtimestamp(end_timestamp).strftime(FORMAT_DATE_TIME) + "\n")
+            with open(f"{self.LOG_FILE_PATH}/program_run_log.txt", "a") as fprogram_run_log:
+                fprogram_run_log.write(datetime.fromtimestamp(end_timestamp).strftime(self.FORMAT_DATE_TIME) + "\n")
                 fprogram_run_log.close()
             self.check_lost_data()
         except Exception as e:
             logging.error(e)
 
     def check_no_data(self):
-        if os.path.exists(f"{LOG_FILE_PATH}/nodata_log.txt"):
-            with open(f"{LOG_FILE_PATH}/nodata_log.txt", "r+") as f:
+        if os.path.exists(f"{self.LOG_FILE_PATH}/nodata_log.txt"):
+            with open(f"{self.LOG_FILE_PATH}/nodata_log.txt", "r+") as f:
                 lines = f.readlines()
                 f.seek(0)
                 for line in lines:
                     if line.strip():
                         nodata_datetime = line.strip()
-                        dt = datetime.strptime(nodata_datetime, FORMAT_DATE_TIME)
+                        dt = datetime.strptime(nodata_datetime, self.FORMAT_DATE_TIME)
                         start_timestamp, end_timestamp = self.get_start_end_timestamp(dt)
                         data_list = self.get_weather_data(start_timestamp, end_timestamp)
                         if len(data_list) > 0:
@@ -185,17 +183,17 @@ class GetApiWeatherLink:
                 f.truncate()
 
     def check_lost_data(self):
-        if os.path.exists(f"{LOG_FILE_PATH}/program_run_log.txt"):
-            with open(f"{LOG_FILE_PATH}/program_run_log.txt", "r+") as fprogram_run_log:
+        if os.path.exists(f"{self.LOG_FILE_PATH}/program_run_log.txt"):
+            with open(f"{self.LOG_FILE_PATH}/program_run_log.txt", "r+") as fprogram_run_log:
                 lines = fprogram_run_log.readlines()[-2:]
                 fprogram_run_log.seek(0)
                 fprogram_run_log.writelines(lines)
                 fprogram_run_log.truncate()
                 fprogram_run_log.close()
             if len(lines) > 1:
-                last_dt = datetime.strptime(lines[1].strip(), FORMAT_DATE_TIME)
+                last_dt = datetime.strptime(lines[1].strip(), self.FORMAT_DATE_TIME)
                 last_dt = last_dt - timedelta(minutes=5)
-                old_dt = datetime.strptime(lines[0].strip(), FORMAT_DATE_TIME)
+                old_dt = datetime.strptime(lines[0].strip(), self.FORMAT_DATE_TIME)
                 if last_dt > old_dt:
                     diff = last_dt - old_dt
                     count = int((diff.seconds / 60) / 5)
