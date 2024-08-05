@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-LOG_FILE_PATH = "./logs"
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE_PATH = f"{ROOT_DIR}/logs"
 FORMAT_DATE_TIME = "%Y-%m-%d %H:%M"
 
 logging.basicConfig(filename=f'{LOG_FILE_PATH}/error.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
