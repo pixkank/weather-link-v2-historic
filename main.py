@@ -47,8 +47,15 @@ class GetApiWeatherLink:
     
     def convert_datetime_to_ts(self, dt):
         return int(datetime.timestamp(dt))
-
+    
+    def convert_ts_to_datetime(self,ts):
+        dt = datetime.fromtimestamp(ts)
+        dt = dt + timedelta(hours=7)
+        return dt
+    
     def get_start_end_timestamp(self, dt):
+        # If Thai Time Zone  UTC 7 -> Sensor UTC 0
+        dt = dt - timedelta(hours=7)
         start_timestamp = self.convert_datetime_to_ts(dt-timedelta(minutes=5))
         end_timestamp = self.convert_datetime_to_ts(dt)
         return start_timestamp, end_timestamp
@@ -152,7 +159,8 @@ class GetApiWeatherLink:
 
         if response.status_code != 200:
             self.no_data(end_timestamp,data_list["device_id"])
-            logging.error(f"DEVICE_ID : {data_list["device_id"]} | Error posting data: status code {response.status_code} | {response.text}")
+            device_id = data_list["device_id"]
+            logging.error(f"DEVICE_ID : {device_id} | Error posting data: status code {response.status_code} | {response.text}")
             pass
 
         # log data
